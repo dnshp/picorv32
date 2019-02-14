@@ -31,6 +31,7 @@
 	.global hard_mulhsu
 	.global hard_mulhu
 	.global stats
+	.global customtest
 
 reset_vec:
 	// no more than 16 bytes here !
@@ -464,6 +465,8 @@ start:
 	/* call stats C code */
 	jal ra,stats
 #endif
+
+	jal ra,customtest
 
 	/* print "DONE\n" */
 	lui a0,0x10000000>>12

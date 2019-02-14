@@ -108,6 +108,28 @@ clean:
 	rm -f hx8kdemo_syn.v hx8kdemo_syn_tb.vvp hx8kdemo_tb.vvp
 	rm -f icebreaker.json icebreaker.log icebreaker.asc icebreaker.rpt icebreaker.bin
 	rm -f icebreaker_syn.v icebreaker_syn_tb.vvp icebreaker_tb.vvp
+	rm -f basicfw.elf basicfw.bin basicfw.hex synth.v synth.fir
+	rm -f firesim_uart_wrapper/UARTWrapper.fir firesim_uart_wrapper/UARTWrapper.v firesim_uart_wrapper/UARTWrapper.anno
+
+# ---- Dinesh added ----
+
+basicfw.elf: basicfw.c
+	/opt/riscv32i/bin/riscv32-unknown-elf-gcc -g basicfw.c -o basicfw.elf
+
+basicfw.bin: basicfw.elf
+	/opt/riscv32i/bin/riscv32-unknown-elf-objcopy -O binary basicfw.elf basicfw.bin
+
+basicfw.hex: basicfw.bin
+	python3 ../firmware/makehex.py basicfw.bin 2048 > basicfw.hex
+
+synth.v: picosoc.v ../picorv32.v spimemio.v simpleuart.v basicfw.hex
+	yosys -p 'read_verilog picosoc.v ../picorv32.v spimemio.v simpleuart.v; prep -top picosoc; synth; write_verilog synth.v'
+
+synth.fir: synth.v UARTWrapperPlugin.fir
+	yosys -p 'read_verilog synth.v; prep; write_firrtl synth.fir'
+
+firesim_uart_wrapper/UARTWrapper.fir:
+	cd firesim_uart_wrapper && exec sbt "runMain UARTWrapperDriver"
 
 .PHONY: spiflash_tb clean
 .PHONY: hx8kprog hx8kprog_fw hx8ksim hx8ksynsim

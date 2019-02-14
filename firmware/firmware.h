@@ -33,4 +33,7 @@ void multest(void);
 // stats.c
 void stats(void);
 
+// customtest.c
+void customtest(void);
+
 #endif

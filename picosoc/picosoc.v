@@ -67,9 +67,9 @@ module picosoc (
 	parameter [0:0] ENABLE_COUNTERS = 1;
 	parameter [0:0] ENABLE_IRQ_QREGS = 0;
 
-	parameter integer MEM_WORDS = 256;
+	parameter integer MEM_WORDS = 2048; // MODDED BY DINESH
 	parameter [31:0] STACKADDR = (4*MEM_WORDS);       // end of memory
-	parameter [31:0] PROGADDR_RESET = 32'h 0010_0000; // 1 MB into flash
+	parameter [31:0] PROGADDR_RESET = 32'h 0000_0000; // start in scratchpad
 	parameter [31:0] PROGADDR_IRQ = 32'h 0000_0000;
 
 	reg [31:0] irq;
@@ -93,7 +93,8 @@ module picosoc (
 	wire [3:0] mem_wstrb;
 	wire [31:0] mem_rdata;
 
-	wire spimem_ready;
+	// wire spimem_ready; // removed by Dinesh
+	wire spimem_ready = 1'b0; // added by Dinesh
 	wire [31:0] spimem_rdata;
 
 	reg ram_ready;
@@ -104,7 +105,8 @@ module picosoc (
 	assign iomem_addr = mem_addr;
 	assign iomem_wdata = mem_wdata;
 
-	wire spimemio_cfgreg_sel = mem_valid && (mem_addr == 32'h 0200_0000);
+	// wire spimemio_cfgreg_sel = mem_valid && (mem_addr == 32'h 0200_0000); // removed by Dinesh
+	wire spimemio_cfgreg_sel = 1'b0; // added by Dinesh
 	wire [31:0] spimemio_cfgreg_do;
 
 	wire        simpleuart_reg_div_sel = mem_valid && (mem_addr == 32'h 0200_0004);
@@ -149,7 +151,8 @@ module picosoc (
 		.clk    (clk),
 		.resetn (resetn),
 		.valid  (mem_valid && mem_addr >= 4*MEM_WORDS && mem_addr < 32'h 0200_0000),
-		.ready  (spimem_ready),
+		// .ready  (spimem_ready), // removed by Dinesh
+		.ready  (), // added by Dinesh
 		.addr   (mem_addr[23:0]),
 		.rdata  (spimem_rdata),
 
@@ -234,16 +237,19 @@ module picosoc_mem #(
 	input [3:0] wen,
 	input [21:0] addr,
 	input [31:0] wdata,
-	output reg [31:0] rdata
+	output reg [31:0] rdata,
 );
 	reg [31:0] mem [0:WORDS-1];
+	initial begin
+		$readmemh("basicfw.hex", mem);
+	end
 
 	always @(posedge clk) begin
-		rdata <= mem[addr];
 		if (wen[0]) mem[addr][ 7: 0] <= wdata[ 7: 0];
 		if (wen[1]) mem[addr][15: 8] <= wdata[15: 8];
 		if (wen[2]) mem[addr][23:16] <= wdata[23:16];
 		if (wen[3]) mem[addr][31:24] <= wdata[31:24];
+		rdata <= mem[addr];
 	end
 endmodule
 

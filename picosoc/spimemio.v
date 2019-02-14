@@ -148,7 +148,7 @@ module spimemio (
 	reg xfer_io2_90;
 	reg xfer_io3_90;
 
-	always @(negedge clk) begin
+	always @(posedge clk) begin // changed from negedge
 		xfer_io0_90 <= xfer_io0_do;
 		xfer_io1_90 <= xfer_io1_do;
 		xfer_io2_90 <= xfer_io2_do;
