@@ -123,7 +123,7 @@ basicfw.hex: basicfw.bin
 	python3 ../firmware/makehex.py basicfw.bin 2048 > basicfw.hex
 
 synth.v: picosoc.v ../picorv32.v spimemio.v simpleuart.v basicfw.hex
-	yosys -p 'read_verilog picosoc.v ../picorv32.v spimemio.v simpleuart.v; prep -top picosoc; synth; write_verilog synth.v'
+	yosys -p 'read_verilog picosoc.v ../picorv32.v spimemio.v simpleuart.v; prep -top picosoc_axi; synth; write_verilog synth.v'
 
 synth.fir: synth.v UARTWrapperPlugin.fir
 	yosys -p 'read_verilog synth.v; prep; write_firrtl synth.fir'

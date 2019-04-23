@@ -30,6 +30,7 @@ module picosoc (
 	input resetn,
 
 	output        iomem_valid,
+	output		  iomem_instr,
 	input         iomem_ready,
 	output [ 3:0] iomem_wstrb,
 	output [31:0] iomem_addr,
@@ -100,10 +101,11 @@ module picosoc (
 	reg ram_ready;
 	wire [31:0] ram_rdata;
 
-	assign iomem_valid = mem_valid && (mem_addr[31:24] > 8'h 01);
+	assign iomem_valid = mem_valid && (mem_addr[31:24] < 8'h 02);
 	assign iomem_wstrb = mem_wstrb;
 	assign iomem_addr = mem_addr;
 	assign iomem_wdata = mem_wdata;
+	assign iomem_instr = mem_instr;
 
 	// wire spimemio_cfgreg_sel = mem_valid && (mem_addr == 32'h 0200_0000); // removed by Dinesh
 	wire spimemio_cfgreg_sel = 1'b0; // added by Dinesh
@@ -116,8 +118,10 @@ module picosoc (
 	wire [31:0] simpleuart_reg_dat_do;
 	wire        simpleuart_reg_dat_wait;
 
-	assign mem_ready = (iomem_valid && iomem_ready) || spimem_ready || ram_ready || spimemio_cfgreg_sel ||
-			simpleuart_reg_div_sel || (simpleuart_reg_dat_sel && !simpleuart_reg_dat_wait);
+	//assign mem_ready = (iomem_valid && iomem_ready) || spimem_ready || ram_ready || spimemio_cfgreg_sel ||
+	//		simpleuart_reg_div_sel || (simpleuart_reg_dat_sel && !simpleuart_reg_dat_wait);
+
+	assign mem_ready = (iomem_valid && iomem_ready) || simpleuart_reg_div_sel || (simpleuart_reg_dat_sel && !simpleuart_reg_dat_wait);
 
 	assign mem_rdata = (iomem_valid && iomem_ready) ? iomem_rdata : spimem_ready ? spimem_rdata : ram_ready ? ram_rdata :
 			spimemio_cfgreg_sel ? spimemio_cfgreg_do : simpleuart_reg_div_sel ? simpleuart_reg_div_do :
@@ -200,13 +204,14 @@ module picosoc (
 	always @(posedge clk)
 		ram_ready <= mem_valid && !mem_ready && mem_addr < 4*MEM_WORDS;
 
-	picosoc_mem #(.WORDS(MEM_WORDS)) memory (
-		.clk(clk),
-		.wen((mem_valid && !mem_ready && mem_addr < 4*MEM_WORDS) ? mem_wstrb : 4'b0),
-		.addr(mem_addr[23:2]),
-		.wdata(mem_wdata),
-		.rdata(ram_rdata)
-	);
+	//picosoc_mem #(.WORDS(MEM_WORDS)) memory (
+	//	.clk(clk),
+	//	.wen((mem_valid && !mem_ready && mem_addr < 4*MEM_WORDS) ? mem_wstrb : 4'b0),
+	//	.addr(mem_addr[23:2]),
+	//	.wdata(mem_wdata),
+	//	.rdata(ram_rdata)
+	//);
+	assign ram_rdata = 0;
 endmodule
 
 // Implementation note:
@@ -253,3 +258,139 @@ module picosoc_mem #(
 	end
 endmodule
 
+module picosoc_axi (
+	input clk,
+	input resetn,
+
+	output        mem_axi_awvalid,
+	input         mem_axi_awready,
+	output [31:0] mem_axi_awaddr,
+	output [ 2:0] mem_axi_awprot,
+
+	output        mem_axi_wvalid,
+	input         mem_axi_wready,
+	output [31:0] mem_axi_wdata,
+	output [ 3:0] mem_axi_wstrb,
+
+	input         mem_axi_bvalid,
+	output        mem_axi_bready,
+
+	output        mem_axi_arvalid,
+	input         mem_axi_arready,
+	output [31:0] mem_axi_araddr,
+	output [ 2:0] mem_axi_arprot,
+
+	input         mem_axi_rvalid,
+	output        mem_axi_rready,
+	input  [31:0] mem_axi_rdata,
+
+	input  irq_5,
+	input  irq_6,
+	input  irq_7,
+
+	output ser_tx,
+	input  ser_rx,
+
+	output flash_csb,
+	output flash_clk,
+
+	output flash_io0_oe,
+	output flash_io1_oe,
+	output flash_io2_oe,
+	output flash_io3_oe,
+
+	output flash_io0_do,
+	output flash_io1_do,
+	output flash_io2_do,
+	output flash_io3_do,
+
+	input  flash_io0_di,
+	input  flash_io1_di,
+	input  flash_io2_di,
+	input  flash_io3_di	
+);
+
+	wire mem_valid;
+	wire mem_instr;
+	wire mem_ready;
+	wire [31:0] mem_addr;
+	wire [31:0] mem_wdata;
+	wire [3:0] mem_wstrb;
+	wire [31:0] mem_rdata;
+
+	picorv32_axi_adapter axi_adapter (
+		.clk(clk),
+		.resetn(resetn),
+
+		// AXI interface
+		.mem_axi_awvalid(mem_axi_awvalid),
+		.mem_axi_awready(mem_axi_awready),
+		.mem_axi_awaddr(mem_axi_awaddr),
+		.mem_axi_awprot(mem_axi_awprot),
+
+		.mem_axi_wvalid(mem_axi_wvalid),
+		.mem_axi_wready(mem_axi_wready),
+		.mem_axi_wdata(mem_axi_wdata),
+		.mem_axi_wstrb(mem_axi_wstrb),
+
+		.mem_axi_bvalid(mem_axi_bvalid),
+		.mem_axi_bready(mem_axi_bready),
+
+		.mem_axi_arvalid(mem_axi_arvalid),
+		.mem_axi_arready(mem_axi_arready),
+		.mem_axi_araddr(mem_axi_araddr),
+		.mem_axi_arprot(mem_axi_arprot),
+
+		.mem_axi_rvalid(mem_axi_rvalid),
+		.mem_axi_rready(mem_axi_rready),
+		.mem_axi_rdata(mem_axi_rdata),
+		
+		// native memory interface
+		.mem_valid(mem_valid),
+		.mem_instr(mem_instr),
+		.mem_ready(mem_ready),
+		.mem_addr(mem_addr),
+		.mem_wdata(mem_wdata),
+		.mem_wstrb(mem_wstrb),
+		.mem_rdata(mem_rdata)
+	);
+
+	picosoc soc (
+		.clk(clk),
+		.resetn(resetn),
+
+		.iomem_valid(mem_valid),
+		.iomem_instr(mem_instr),
+		.iomem_ready(mem_ready),
+		.iomem_addr(mem_addr),
+		.iomem_wdata(mem_wdata),
+		.iomem_wstrb(mem_wstrb),
+		.iomem_rdata(mem_rdata),
+
+		.irq_5(irq_5),
+		.irq_6(irq_6),
+		.irq_7(irq_7),
+
+		.ser_tx(ser_tx),
+		.ser_rx(ser_rx),
+
+		.flash_csb(flash_csb),
+		.flash_clk(flash_clk),
+
+		.flash_io0_oe(flash_io0_oe),
+		.flash_io1_oe(flash_io1_oe),
+		.flash_io2_oe(flash_io2_oe),
+		.flash_io3_oe(flash_io3_oe),
+
+		.flash_io0_do(flash_io0_do),
+		.flash_io1_do(flash_io1_do),
+		.flash_io2_do(flash_io2_do),
+		.flash_io3_do(flash_io3_do),
+
+		.flash_io0_di(flash_io0_di),
+		.flash_io1_di(flash_io1_di),
+		.flash_io2_di(flash_io2_di),
+		.flash_io3_di(flash_io3_di)
+	);
+
+endmodule
