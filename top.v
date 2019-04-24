@@ -41,7 +41,6 @@ module top (
 
 	initial begin
 		$readmemh("ctest.hex", memory);
-		$display("hmm");
 	end
 
 	always @(posedge clk) begin
