@@ -148,7 +148,11 @@ module picosoc (
 		.mem_wdata   (mem_wdata  ),
 		.mem_wstrb   (mem_wstrb  ),
 		.mem_rdata   (mem_rdata  ),
-		.irq         (irq        )
+		.irq         (irq        ),
+		.pcpi_rd     (0),
+		.pcpi_ready  (0),
+		.pcpi_wait   (0),
+		.pcpi_wr     (0)
 	);
 
 	spimemio spimemio (
