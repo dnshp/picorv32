@@ -128,9 +128,6 @@ synth.v: picosoc.v ../picorv32.v spimemio.v simpleuart.v basicfw.hex
 synth.fir: synth.v UARTWrapperPlugin.fir
 	yosys -p 'read_verilog synth.v; prep; write_firrtl synth.fir'
 
-firesim_uart_wrapper/UARTWrapper.fir:
-	cd firesim_uart_wrapper && exec sbt "runMain UARTWrapperDriver"
-
 .PHONY: spiflash_tb clean
 .PHONY: hx8kprog hx8kprog_fw hx8ksim hx8ksynsim
 .PHONY: icebprog icebprog_fw icebsim icebsynsim

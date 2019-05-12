@@ -24,3 +24,5 @@
 /icebreaker_fw.bin
 /testbench.vcd
 /cmos.log
+/synth.fir
+/synth.v
